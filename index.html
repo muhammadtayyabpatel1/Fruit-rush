@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fruit Catcher Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Rules / Start Screen -->
+  <div id="startScreen" class="screen">
+    <h1>Fruit Catcher</h1>
+    <p>Catch the fruits 🍓 and avoid the bombs 💣!</p>
+    <p>Use arrow keys or drag the basket (desktop) / touch drag (mobile).</p>
+    <button id="startBtn">Start Game</button>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="gameScreen" class="screen hidden">
+    <div id="hud">
+      <span>Score: <span id="score">0</span></span>
+      <span>High Score: <span id="highScore">0</span></span>
+      <button id="muteBtn">🔊</button>
+    </div>
+    <div id="gameArea">
+      <div id="basket"></div>
+    </div>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="gameOverScreen" class="screen hidden">
+    <h1>Game Over!</h1>
+    <p>Your Score: <span id="finalScore">0</span></p>
+    <button id="restartBtn">Play Again</button>
+  </div>
+
+  <!-- Audio Elements -->
+  <audio id="bgMusic" src="audio/bg-loop.mp3" loop></audio>
+  <audio id="fruitSound" src="audio/fruit-catch.mp3"></audio>
+  <audio id="bombSound" src="audio/bomb-explosion.mp3"></audio>
+
+  <script src="script.js"></script>
+</body>
+</html>
