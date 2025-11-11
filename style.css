@@ -16,6 +16,7 @@ body, html {
   align-items: center;
   height: 100%;
   background: linear-gradient(to bottom, #87CEEB, #fff);
+  position: relative;
 }
 .hidden {
   display: none;
@@ -42,27 +43,20 @@ body, html {
 #basket {
   position: absolute;
   bottom: 20px;
-  left: calc(50% - 40px);
-  width: 80px;
-  height: 50px;
-  background: url('images/basket.png') no-repeat center/contain;
-  /* If you don’t have custom image, use background-color fallback */
-  background-color: brown;
-  border-radius: 10px;
+  left: calc(50% - 25px);
+  font-size: 2rem;
+  cursor: pointer;
 }
 .falling {
   position: absolute;
-  width: 40px;
-  height: 40px;
-  background-size: contain;
+  font-size: 2rem;
   pointer-events: none;
 }
 .fruit {
-  background: url('https://i.postimg.cc/FsB6G4zK/apple.png') no-repeat center/contain;
+  color: red;
 }
-
 .bomb {
-  background: url('https://i.postimg.cc/W1p3H2T3/bomb.png') no-repeat center/contain;
+  color: black;
 }
 button {
   padding: 10px 20px;
