@@ -49,38 +49,33 @@ function startGame() {
 }
 
 function gameLoop() {
-  // move falling items
   const fallItems = document.querySelectorAll('.falling');
   fallItems.forEach(item => {
     let top = parseFloat(item.style.top);
     top += speed;
     item.style.top = top + 'px';
 
-    // if catches
-    if (top + item.offsetHeight >= gameArea.offsetHeight - 20) {
-      const basketLeft = basket.getBoundingClientRect().left;
-      const basketRight = basketLeft + basket.offsetWidth;
-      const itemLeft = item.getBoundingClientRect().left;
-      const itemRight = itemLeft + item.offsetWidth;
+    const basketRect = basket.getBoundingClientRect();
+    const itemRect = item.getBoundingClientRect();
 
-      if (itemRight > basketLeft && itemLeft < basketRight) {
-        if (item.classList.contains('fruit')) {
-          score++;
-          scoreEl.textContent = score;
-          if (!isMuted) fruitSound.play();
-          item.remove();
-          speed = 2 + Math.floor(score/5);  // increase speed every 5 fruits
-        } else if (item.classList.contains('bomb')) {
-          if (!isMuted) bombSound.play();
-          endGame();
-        }
-      } else if (top >= gameArea.offsetHeight) {
-        // missed item goes off bottom
+    if (
+      itemRect.bottom >= basketRect.top &&
+      itemRect.right > basketRect.left &&
+      itemRect.left < basketRect.right &&
+      itemRect.top < basketRect.bottom
+    ) {
+      if (item.classList.contains('fruit')) {
+        score++;
+        scoreEl.textContent = score;
+        if (!isMuted) fruitSound.play();
         item.remove();
+        speed = 2 + Math.floor(score/5);
+      } else if (item.classList.contains('bomb')) {
+        if (!isMuted) bombSound.play();
+        endGame();
       }
     }
 
-    // Clean up beyond bottom
     if (top > gameArea.offsetHeight + 50) {
       item.remove();
     }
@@ -93,11 +88,11 @@ function gameLoop() {
 
 function spawnFalling() {
   const item = document.createElement('div');
-  const isBomb = Math.random() < 0.2;  // 20% chance bomb
-  item.classList.add('falling');
-  item.classList.add(isBomb ? 'bomb' : 'fruit');
-  item.style.left = Math.random() * (gameArea.offsetWidth - 40) + 'px';
-  item.style.top = '-40px';
+  const isBomb = Math.random() < 0.2;  // 20% bombs
+  item.classList.add('falling', isBomb ? 'bomb' : 'fruit');
+  item.style.left = Math.random() * (gameArea.offsetWidth - 30) + 'px';
+  item.style.top = '-30px';
+  item.textContent = isBomb ? '💣' : ['🍎','🍓','🍊','🍌'][Math.floor(Math.random()*4)];
   gameArea.appendChild(item);
 }
 
@@ -144,19 +139,11 @@ function basketMoveTouch(e) {
 }
 
 function arrowMove(e) {
-  const key = e.key;
   let x = parseFloat(basket.style.left);
-  if (key === 'ArrowLeft' || key === 'a') {
-    x -= 30;
-  } else if (key === 'ArrowRight' || key === 'd') {
-    x += 30;
-  } else {
-    return;
-  }
+  if (e.key === 'ArrowLeft' || e.key === 'a') x -= 30;
+  if (e.key === 'ArrowRight' || e.key === 'd') x += 30;
   if (x < 0) x = 0;
-  if (x > gameArea.offsetWidth - basket.offsetWidth) {
-    x = gameArea.offsetWidth - basket.offsetWidth;
-  }
+  if (x > gameArea.offsetWidth - basket.offsetWidth) x = gameArea.offsetWidth - basket.offsetWidth;
   basket.style.left = x + 'px';
 }
 
