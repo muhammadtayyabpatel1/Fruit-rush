@@ -1,164 +1,150 @@
-// Elements & state
-const startScreen = document.getElementById('startScreen');
-const gameScreen = document.getElementById('gameScreen');
-const gameOverScreen = document.getElementById('gameOverScreen');
-const startBtn = document.getElementById('startBtn');
-const restartBtn = document.getElementById('restartBtn');
-const scoreEl = document.getElementById('score');
-const highScoreEl = document.getElementById('highScore');
-const finalScoreEl = document.getElementById('finalScore');
+const startScreen = document.getElementById('start-screen');
+const gameScreen = document.getElementById('game-screen');
+const gameOverScreen = document.getElementById('game-over');
+const gameArea = document.getElementById('game-area');
 const basket = document.getElementById('basket');
-const gameArea = document.getElementById('gameArea');
-const muteBtn = document.getElementById('muteBtn');
-const bgMusic = document.getElementById('bgMusic');
-const fruitSound = document.getElementById('fruitSound');
-const bombSound = document.getElementById('bombSound');
+const scoreDisplay = document.getElementById('score');
+const highScoreDisplay = document.getElementById('high-score');
+const finalScore = document.getElementById('final-score');
+const finalHigh = document.getElementById('final-high');
+const muteBtn = document.getElementById('mute-btn');
+
+const bgMusic = document.getElementById('bg-music');
+const fruitSound = document.getElementById('fruit-sound');
+const bombSound = document.getElementById('bomb-sound');
 
 let score = 0;
-let highScore = localStorage.getItem('highScore') || 0;
-highScoreEl.textContent = highScore;
-
-let gameInterval;
-let spawnInterval;
-let speed = 2;
+let highScore = localStorage.getItem('fruitHighScore') || 0;
+let speed = 3;
+let gameRunning = false;
 let isMuted = false;
+let spawnInterval;
 
-// Start game
-startBtn.addEventListener('click', startGame);
-restartBtn.addEventListener('click', restartGame);
-muteBtn.addEventListener('click', toggleMute);
+highScoreDisplay.textContent = highScore;
 
-function startGame() {
+// 🕹 Start Game
+document.getElementById('start-btn').onclick = () => {
   startScreen.classList.add('hidden');
   gameScreen.classList.remove('hidden');
+  startGame();
+};
+
+// 🔁 Restart Game
+document.getElementById('restart-btn').onclick = () => {
+  gameOverScreen.classList.add('hidden');
+  gameScreen.classList.remove('hidden');
+  startGame();
+};
+
+// 🔇 Mute/Unmute
+muteBtn.onclick = () => {
+  isMuted = !isMuted;
+  muteBtn.textContent = isMuted ? '🔇' : '🔊';
+  if (isMuted) bgMusic.pause();
+  else bgMusic.play();
+};
+
+// 🎮 Start Function
+function startGame() {
+  gameArea.innerHTML = '<div id="basket">🧺</div>';
+  const newBasket = document.getElementById('basket');
+  Object.assign(basket, newBasket);
+  
   score = 0;
-  speed = 2;
-  scoreEl.textContent = score;
-  loadHighScore();
+  speed = 3;
+  scoreDisplay.textContent = score;
+  gameRunning = true;
   bgMusic.currentTime = 0;
   if (!isMuted) bgMusic.play();
 
-  basket.style.left = (gameArea.offsetWidth / 2 - basket.offsetWidth/2) + 'px';
-
-  gameArea.addEventListener('mousemove', basketMove);
-  gameArea.addEventListener('touchmove', basketMoveTouch, {passive:false});
-  document.addEventListener('keydown', arrowMove);
-
-  spawnInterval = setInterval(spawnFalling, 1000);
-  gameInterval = requestAnimationFrame(gameLoop);
+  spawnInterval = setInterval(spawnFalling, 1000 / (speed / 2));
+  requestAnimationFrame(updateGame);
 }
 
-function gameLoop() {
-  const fallItems = document.querySelectorAll('.falling');
-  fallItems.forEach(item => {
-    let top = parseFloat(item.style.top);
-    top += speed;
-    item.style.top = top + 'px';
-
-    const basketRect = basket.getBoundingClientRect();
-    const itemRect = item.getBoundingClientRect();
-
-    if (
-      itemRect.bottom >= basketRect.top &&
-      itemRect.right > basketRect.left &&
-      itemRect.left < basketRect.right &&
-      itemRect.top < basketRect.bottom
-    ) {
-      if (item.classList.contains('fruit')) {
-        score++;
-        scoreEl.textContent = score;
-        if (!isMuted) fruitSound.play();
-        item.remove();
-        speed = 2 + Math.floor(score/5);
-      } else if (item.classList.contains('bomb')) {
-        if (!isMuted) bombSound.play();
-        endGame();
-      }
-    }
-
-    if (top > gameArea.offsetHeight + 50) {
-      item.remove();
-    }
-  });
-
-  if (!gameScreen.classList.contains('hidden')) {
-    requestAnimationFrame(gameLoop);
-  }
-}
-
+// 🍓 Spawn Fruits and Bombs
 function spawnFalling() {
   const item = document.createElement('div');
-  const isBomb = Math.random() < 0.2;  // 20% bombs
-  item.classList.add('falling', isBomb ? 'bomb' : 'fruit');
+  item.classList.add('falling');
+  const isBomb = Math.random() < 0.2;
+  item.textContent = isBomb ? '💣' : ['🍎','🍓','🍌','🍉','🍒'][Math.floor(Math.random()*5)];
+  item.dataset.type = isBomb ? 'bomb' : 'fruit';
   item.style.left = Math.random() * (gameArea.offsetWidth - 30) + 'px';
-  item.style.top = '-30px';
-  item.textContent = isBomb ? '💣' : ['🍎','🍓','🍊','🍌'][Math.floor(Math.random()*4)];
+  item.style.top = '-40px';
   gameArea.appendChild(item);
 }
 
+// ⚡ Update Game
+function updateGame() {
+  if (!gameRunning) return;
+  const fallingItems = document.querySelectorAll('.falling');
+  const basketRect = basket.getBoundingClientRect();
+  const areaRect = gameArea.getBoundingClientRect();
+
+  fallingItems.forEach(item => {
+    item.style.top = parseFloat(item.style.top) + speed + 'px';
+    const itemRect = item.getBoundingClientRect();
+    
+    if (
+      itemRect.bottom >= basketRect.top &&
+      itemRect.left < basketRect.right &&
+      itemRect.right > basketRect.left &&
+      itemRect.bottom <= areaRect.bottom
+    ) {
+      if (item.dataset.type === 'fruit') {
+        score++;
+        scoreDisplay.textContent = score;
+        if (score % 5 === 0) speed += 0.5;
+        if (!isMuted) fruitSound.play();
+      } else {
+        if (!isMuted) bombSound.play();
+        endGame();
+      }
+      item.remove();
+    }
+
+    if (parseFloat(item.style.top) > areaRect.height) item.remove();
+  });
+
+  requestAnimationFrame(updateGame);
+}
+
+// ❌ End Game
 function endGame() {
-  cancelAnimationFrame(gameInterval);
+  gameRunning = false;
   clearInterval(spawnInterval);
   bgMusic.pause();
-  gameScreen.classList.add('hidden');
-  gameOverScreen.classList.remove('hidden');
-  finalScoreEl.textContent = score;
-
+  
   if (score > highScore) {
     highScore = score;
-    localStorage.setItem('highScore', highScore);
+    localStorage.setItem('fruitHighScore', highScore);
   }
-  highScoreEl.textContent = highScore;
+
+  finalScore.textContent = score;
+  finalHigh.textContent = highScore;
+  highScoreDisplay.textContent = highScore;
+
+  gameScreen.classList.add('hidden');
+  gameOverScreen.classList.remove('hidden');
 }
 
-function restartGame() {
-  gameOverScreen.classList.add('hidden');
-  startScreen.classList.remove('hidden');
-}
+// 🎮 Basket Controls (Keyboard + Touch)
+let moveX = 0;
 
-function basketMove(e) {
-  const rect = gameArea.getBoundingClientRect();
-  let x = e.clientX - rect.left - basket.offsetWidth/2;
-  if (x < 0) x = 0;
-  if (x > gameArea.offsetWidth - basket.offsetWidth) {
-    x = gameArea.offsetWidth - basket.offsetWidth;
+document.addEventListener('keydown', (e) => {
+  const rect = basket.getBoundingClientRect();
+  if (e.key === 'ArrowLeft' && rect.left > gameArea.getBoundingClientRect().left) {
+    basket.style.left = rect.left - 30 - gameArea.getBoundingClientRect().left + 'px';
   }
-  basket.style.left = x + 'px';
-}
+  if (e.key === 'ArrowRight' && rect.right < gameArea.getBoundingClientRect().right) {
+    basket.style.left = rect.left + 30 - gameArea.getBoundingClientRect().left + 'px';
+  }
+});
 
-function basketMoveTouch(e) {
+gameArea.addEventListener('touchmove', (e) => {
   e.preventDefault();
+  const touch = e.touches[0];
   const rect = gameArea.getBoundingClientRect();
-  let touch = e.touches[0];
-  let x = touch.clientX - rect.left - basket.offsetWidth/2;
-  if (x < 0) x = 0;
-  if (x > gameArea.offsetWidth - basket.offsetWidth) {
-    x = gameArea.offsetWidth - basket.offsetWidth;
-  }
+  let x = touch.clientX - rect.left - basket.offsetWidth / 2;
+  x = Math.max(0, Math.min(rect.width - basket.offsetWidth, x));
   basket.style.left = x + 'px';
-}
-
-function arrowMove(e) {
-  let x = parseFloat(basket.style.left);
-  if (e.key === 'ArrowLeft' || e.key === 'a') x -= 30;
-  if (e.key === 'ArrowRight' || e.key === 'd') x += 30;
-  if (x < 0) x = 0;
-  if (x > gameArea.offsetWidth - basket.offsetWidth) x = gameArea.offsetWidth - basket.offsetWidth;
-  basket.style.left = x + 'px';
-}
-
-function toggleMute() {
-  isMuted = !isMuted;
-  if (isMuted) {
-    bgMusic.pause();
-    muteBtn.textContent = '🔇';
-  } else {
-    bgMusic.play();
-    muteBtn.textContent = '🔊';
-  }
-}
-
-function loadHighScore() {
-  highScore = localStorage.getItem('highScore') || 0;
-  highScoreEl.textContent = highScore;
-}
+}, { passive: false });
