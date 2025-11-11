@@ -58,10 +58,11 @@ body, html {
   pointer-events: none;
 }
 .fruit {
-  background: url('images/fruit.png') no-repeat center/contain;
+  background: url('https://i.postimg.cc/FsB6G4zK/apple.png') no-repeat center/contain;
 }
+
 .bomb {
-  background: url('images/bomb.png') no-repeat center/contain;
+  background: url('https://i.postimg.cc/W1p3H2T3/bomb.png') no-repeat center/contain;
 }
 button {
   padding: 10px 20px;
