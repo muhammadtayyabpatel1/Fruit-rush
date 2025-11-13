@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const leftBtn = document.getElementById('left-btn');
     const rightBtn = document.getElementById('right-btn');
 
+    const bgMusic = document.getElementById('bg-music');
+    const soundFruit = document.getElementById('sound-fruit');
+    const soundBomb = document.getElementById('sound-bomb');
+
     let score = 0;
     let topScore = localStorage.getItem('topScore') || 0;
     topScoreElement.textContent = topScore;
@@ -21,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let fruitInterval;
     let gamePaused = false;
 
-    let basketPos = gameContainer.offsetWidth / 2;
+    let basketPos = 0;
     let moveLeft = false;
     let moveRight = false;
 
@@ -32,13 +36,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Make game container focusable for arrow keys
     gameContainer.setAttribute('tabindex', '0');
 
+    // Start game
     startButton.addEventListener('click', () => {
         startScreen.classList.add('hidden');
         gameScreen.classList.remove('hidden');
         gameContainer.focus();
+        bgMusic.currentTime = 0;
+        bgMusic.play().catch(err => console.log("Autoplay blocked:", err));
         startGame();
     });
 
+    // Restart game
     restartButton.addEventListener('click', () => {
         gameOverScreen.classList.add('hidden');
         gameScreen.classList.remove('hidden');
@@ -46,15 +54,16 @@ document.addEventListener('DOMContentLoaded', () => {
         startGame();
     });
 
+    // Pause Button: stops movement but not music
     pauseButton.addEventListener('click', () => {
         gamePaused = !gamePaused;
         pauseButton.textContent = gamePaused ? "▶️ Resume" : "⏸️ Pause";
     });
 
-    // Arrow buttons
+    // Arrow Buttons
     function addButtonListeners(btn, dir) {
         btn.addEventListener('mousedown', () => dir === 'left' ? moveLeft = true : moveRight = true);
-        btn.addEventListener('mouseup', () => dir === 'left' ? moveLeft = false : moveRight = false);
+        btn.addEventListener('mouseup', () => moveLeft = moveRight = false);
         btn.addEventListener('touchstart', (e) => { e.preventDefault(); dir === 'left' ? moveLeft = true : moveRight = true; });
         btn.addEventListener('touchend', (e) => { e.preventDefault(); moveLeft = moveRight = false; });
     }
@@ -95,6 +104,9 @@ document.addEventListener('DOMContentLoaded', () => {
         scoreElement.textContent = score;
         gamePaused = false;
         pauseButton.textContent = "⏸️ Pause";
+        basketPos = gameContainer.offsetWidth / 2;
+        dragMove(basketPos + basket.offsetWidth/2);
+
         fallingItems.forEach(item => item.element.remove());
         fallingItems = [];
 
@@ -115,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateGame() {
         if(!gamePaused){
-            // Move basket with arrow keys
+            // Move basket
             if(moveLeft) basketPos -= 10;
             if(moveRight) basketPos += 10;
             dragMove(basketPos + basket.offsetWidth/2);
@@ -127,10 +139,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const basketRect = basket.getBoundingClientRect();
                 const itemRect = itemObj.element.getBoundingClientRect();
                 if(!(basketRect.right < itemRect.left || basketRect.left > itemRect.right || basketRect.bottom < itemRect.top || basketRect.top > itemRect.bottom)){
-                    if(itemObj.isBomb) endGame();
+                    if(itemObj.isBomb){
+                        soundBomb.currentTime = 0;
+                        soundBomb.play();
+                        endGame();
+                    }
                     else {
                         score++;
                         scoreElement.textContent = score;
+                        soundFruit.currentTime = 0;
+                        soundFruit.play();
                         itemObj.element.remove();
                         fallingItems.splice(index,1);
                     }
@@ -159,4 +177,9 @@ document.addEventListener('DOMContentLoaded', () => {
         gameScreen.classList.add('hidden');
         gameOverScreen.classList.remove('hidden');
     }
+
+    // Stop bg music when tab is closed or navigated away
+    window.addEventListener('beforeunload', () => {
+        bgMusic.pause();
+    });
 });
