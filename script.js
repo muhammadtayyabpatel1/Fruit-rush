@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Get elements
     const startScreen = document.getElementById('start-screen');
     const startButton = document.getElementById('start-button');
     const gameScreen = document.getElementById('game-screen');
@@ -22,41 +21,45 @@ document.addEventListener('DOMContentLoaded', () => {
     let fruitInterval;
     let gamePaused = false;
 
-    // Basket movement variables
-    let basketPos = window.innerWidth / 2;
+    let basketPos = gameContainer.offsetWidth / 2;
     let moveLeft = false;
     let moveRight = false;
 
-    // Game objects
     const fruits = ["🍎", "🍌", "🍓", "🍇", "🍊"];
     const bombs = ["💣"];
     let fallingItems = [];
 
-    // Start Game
+    // Make game container focusable for arrow keys
+    gameContainer.setAttribute('tabindex', '0');
+
     startButton.addEventListener('click', () => {
         startScreen.classList.add('hidden');
         gameScreen.classList.remove('hidden');
+        gameContainer.focus();
         startGame();
     });
 
-    // Restart Game
     restartButton.addEventListener('click', () => {
         gameOverScreen.classList.add('hidden');
         gameScreen.classList.remove('hidden');
+        gameContainer.focus();
         startGame();
     });
 
-    // Pause Button
     pauseButton.addEventListener('click', () => {
         gamePaused = !gamePaused;
         pauseButton.textContent = gamePaused ? "▶️ Resume" : "⏸️ Pause";
     });
 
-    // Arrow Buttons
-    leftBtn.addEventListener('mousedown', () => moveLeft = true);
-    leftBtn.addEventListener('mouseup', () => moveLeft = false);
-    rightBtn.addEventListener('mousedown', () => moveRight = true);
-    rightBtn.addEventListener('mouseup', () => moveRight = false);
+    // Arrow buttons
+    function addButtonListeners(btn, dir) {
+        btn.addEventListener('mousedown', () => dir === 'left' ? moveLeft = true : moveRight = true);
+        btn.addEventListener('mouseup', () => dir === 'left' ? moveLeft = false : moveRight = false);
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); dir === 'left' ? moveLeft = true : moveRight = true; });
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); moveLeft = moveRight = false; });
+    }
+    addButtonListeners(leftBtn, 'left');
+    addButtonListeners(rightBtn, 'right');
 
     // Keyboard arrows
     document.addEventListener('keydown', (e) => {
@@ -70,24 +73,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Drag basket
     let isDragging = false;
-    basket.addEventListener('mousedown', () => isDragging = true);
-    basket.addEventListener('mouseup', () => isDragging = false);
-    basket.addEventListener('mousemove', (e) => {
-        if (isDragging) {
-            basketPos = e.clientX - basket.offsetWidth/2;
-            moveBasket();
-        }
-    });
-    basket.addEventListener('touchstart', () => isDragging = true);
-    basket.addEventListener('touchend', () => isDragging = false);
-    basket.addEventListener('touchmove', (e) => {
-        if (isDragging) {
-            basketPos = e.touches[0].clientX - basket.offsetWidth/2;
-            moveBasket();
-        }
-    });
+    function startDrag() { isDragging = true; }
+    function stopDrag() { isDragging = false; }
+    function dragMove(x) {
+        basketPos = x - basket.offsetWidth / 2;
+        if (basketPos < 0) basketPos = 0;
+        if (basketPos > gameContainer.offsetWidth - basket.offsetWidth) basketPos = gameContainer.offsetWidth - basket.offsetWidth;
+        basket.style.left = basketPos + "px";
+    }
 
-    // Start the game
+    basket.addEventListener('mousedown', startDrag);
+    basket.addEventListener('mouseup', stopDrag);
+    basket.addEventListener('mouseleave', stopDrag);
+    basket.addEventListener('mousemove', (e) => { if(isDragging) dragMove(e.clientX); });
+    basket.addEventListener('touchstart', startDrag);
+    basket.addEventListener('touchend', stopDrag);
+    basket.addEventListener('touchmove', (e) => { e.preventDefault(); if(isDragging) dragMove(e.touches[0].clientX); });
+
     function startGame() {
         score = 0;
         scoreElement.textContent = score;
@@ -96,63 +98,45 @@ document.addEventListener('DOMContentLoaded', () => {
         fallingItems.forEach(item => item.element.remove());
         fallingItems = [];
 
-        // Spawn fruits and bombs
         fruitInterval = setInterval(spawnItem, 1000);
-
-        // Game loop
         gameInterval = requestAnimationFrame(updateGame);
     }
 
-    // Move basket
-    function moveBasket() {
-        if (basketPos < 0) basketPos = 0;
-        if (basketPos > gameContainer.offsetWidth - basket.offsetWidth) basketPos = gameContainer.offsetWidth - basket.offsetWidth;
-        basket.style.left = basketPos + "px";
-    }
-
-    // Spawn fruits/bombs
     function spawnItem() {
-        const isBomb = Math.random() < 0.2; // 20% chance bomb
+        const isBomb = Math.random() < 0.2;
         const emoji = isBomb ? bombs[Math.floor(Math.random()*bombs.length)] : fruits[Math.floor(Math.random()*fruits.length)];
         const item = document.createElement('div');
         item.classList.add(isBomb ? 'bomb' : 'fruit');
         item.textContent = emoji;
         item.style.left = Math.random() * (gameContainer.offsetWidth - 30) + "px";
         gameContainer.appendChild(item);
-
-        fallingItems.push({element: item, isBomb: isBomb, y: 0, speed: 2 + score*0.1}); // increase speed as score increases
+        fallingItems.push({element: item, isBomb: isBomb, y: 0, speed: 2 + score*0.1});
     }
 
-    // Update Game Loop
     function updateGame() {
-        if (!gamePaused) {
+        if(!gamePaused){
             // Move basket with arrow keys
-            if (moveLeft) basketPos -= 10;
-            if (moveRight) basketPos += 10;
-            moveBasket();
+            if(moveLeft) basketPos -= 10;
+            if(moveRight) basketPos += 10;
+            dragMove(basketPos + basket.offsetWidth/2);
 
-            // Move fruits/bombs
             fallingItems.forEach((itemObj, index) => {
                 itemObj.y += itemObj.speed;
                 itemObj.element.style.top = itemObj.y + "px";
 
-                // Check collision with basket
                 const basketRect = basket.getBoundingClientRect();
                 const itemRect = itemObj.element.getBoundingClientRect();
-                if (!(basketRect.right < itemRect.left || basketRect.left > itemRect.right || basketRect.bottom < itemRect.top || basketRect.top > itemRect.bottom)) {
-                    if (itemObj.isBomb) {
-                        endGame();
-                    } else {
+                if(!(basketRect.right < itemRect.left || basketRect.left > itemRect.right || basketRect.bottom < itemRect.top || basketRect.top > itemRect.bottom)){
+                    if(itemObj.isBomb) endGame();
+                    else {
                         score++;
                         scoreElement.textContent = score;
-                        // Remove fruit
                         itemObj.element.remove();
                         fallingItems.splice(index,1);
                     }
                 }
 
-                // Remove items if off-screen
-                if (itemObj.y > gameContainer.offsetHeight) {
+                if(itemObj.y > gameContainer.offsetHeight){
                     itemObj.element.remove();
                     fallingItems.splice(index,1);
                 }
@@ -161,13 +145,12 @@ document.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(updateGame);
     }
 
-    // End Game
-    function endGame() {
+    function endGame(){
         cancelAnimationFrame(gameInterval);
         clearInterval(fruitInterval);
         finalScore.textContent = score;
 
-        if (score > topScore) {
+        if(score > topScore){
             topScore = score;
             localStorage.setItem('topScore', topScore);
         }
