@@ -1,56 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fruit Rush 🍓</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fruit Rush 🍎</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-<!-- Start Screen -->
-<div id="start-screen" class="screen">
-  <h1>🍓 Fruit Rush 🍌</h1>
-  <p>Collect fruits to score points but avoid the bombs! 💣</p>
-  <ul class="rules">
-    <li>🎮 Move your basket left and right to catch fruits.</li>
-    <li>💣 Avoid bombs or the game ends.</li>
-    <li>⚡ The game gets faster as you score more!</li>
-    <li>🔊 Use the mute button to toggle music.</li>
-  </ul>
-  <button id="start-btn">Start Game</button>
-</div>
-
-<!-- Game Screen -->
-<div id="game-screen" class="screen hidden">
-  <div class="top-bar">
-    <div>Score: <span id="score">0</span></div>
-    <div>High Score: <span id="high-score">0</span></div>
-    <button id="mute-btn">🔊</button>
-    <button id="pause-btn">⏸️</button>
-  </div>
-  <div id="game-area">
-    <div id="basket">🧺</div>
-    <div id="controls">
-      <button id="left-btn">◀️</button>
-      <button id="right-btn">▶️</button>
+    <!-- Start / Rules Screen -->
+    <div id="start-screen" class="screen">
+        <h1>🍎 Fruit Rush 🍉</h1>
+        <p>Catch the fruits and avoid the bombs! 💣</p>
+        <p>Use mouse/finger to drag the basket or arrow buttons on screen.</p>
+        <button id="start-button">Start Game</button>
     </div>
-  </div>
-</div>
 
-<!-- Game Over Screen -->
-<div id="game-over" class="screen hidden">
-  <h2>Game Over 💥</h2>
-  <p>Your Score: <span id="final-score">0</span></p>
-  <p>High Score: <span id="final-high">0</span></p>
-  <button id="restart-btn">Play Again</button>
-</div>
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen hidden">
+        <div id="scoreboard">
+            <span>Score: <span id="score">0</span></span>
+            <span>Top Score: <span id="top-score">0</span></span>
+            <button id="pause-button">⏸️ Pause</button>
+        </div>
 
-<!-- Audio -->
-<audio id="bg-music" loop src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_f4d9b4d14a.mp3?filename=funny-kids-loop-11273.mp3"></audio>
-<audio id="fruit-sound" src="https://cdn.pixabay.com/download/audio/2021/09/30/audio_9660b4f924.mp3?filename=collect-coin-1-1991.mp3"></audio>
-<audio id="bomb-sound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_2e931a07f0.mp3?filename=explosion-6082.mp3"></audio>
+        <div id="game-container">
+            <div id="basket">🧺</div>
+        </div>
 
-<script src="script.js"></script>
+        <div id="controls">
+            <button id="left-btn">⬅️</button>
+            <button id="right-btn">➡️</button>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" class="screen hidden">
+        <h1>Game Over 💥</h1>
+        <p>Your Score: <span id="final-score">0</span></p>
+        <p>Top Score: <span id="final-top-score">0</span></p>
+        <button id="restart-button">Restart Game</button>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
