@@ -80,34 +80,59 @@ button:hover {
     overflow: hidden;
 }
 
+/* Basket */
 #basket {
     position: absolute;
-    bottom: 20px;
+    bottom: 5%;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 3rem;
+    font-size: 8vw; /* responsive size based on screen width */
     cursor: grab;
+    user-select: none;
 }
 
 /* Fruits and Bombs */
 .fruit, .bomb {
     position: absolute;
-    font-size: 2rem;
+    font-size: 6vw; /* responsive size for mobile */
     user-select: none;
+    pointer-events: none;
 }
 
 /* Controls for arrow buttons */
 #controls {
     position: absolute;
-    bottom: 10px;
+    bottom: 2%;
     left: 50%;
     transform: translateX(-50%);
+    display: flex;
+    gap: 20px;
 }
 
 #controls button {
-    font-size: 2rem;
-    width: 60px;
-    height: 60px;
+    font-size: 6vw;
+    width: 14vw;
+    height: 14vw;
+    min-width: 50px;
+    min-height: 50px;
     border-radius: 50%;
     background: linear-gradient(45deg, #6a11cb, #2575fc);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Responsive text */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2.5rem;
+    }
+    p {
+        font-size: 1rem;
+    }
+    #scoreboard {
+        font-size: 1rem;
+        gap: 10px;
+    }
 }
