@@ -32,8 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let fruitInterval;
 
     let gamePaused = false;
-    let baseSpeed = 2;         // normal speed
-    let currentSpeed = 2;      // increases every 15 pts
+    let baseSpeed = 2;        
+    let currentSpeed = 2;
 
     let basketPos = 0;
     let moveLeft = false;
@@ -80,10 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // -----------------------------------------------------
     function setupBtn(btn, direction) {
         btn.addEventListener("touchstart", () => {
-            if (direction === "left") moveLeft = true;
-            if (direction === "right") moveRight = true;
+            direction === "left" ? moveLeft = true : moveRight = true;
         });
-
         btn.addEventListener("touchend", () => {
             moveLeft = false;
             moveRight = false;
@@ -104,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // -----------------------------------------------------
-    //               DRAG BASKET (PHONE + PC)
+    //                    DRAG BASKET
     // -----------------------------------------------------
     let dragging = false;
 
@@ -135,11 +133,11 @@ document.addEventListener('DOMContentLoaded', () => {
     //                    START GAME FUNCTION
     // -----------------------------------------------------
     function startGame() {
-        // reset values
         score = 0;
         currentSpeed = baseSpeed;
         scoreElement.textContent = score;
-        basket.style.bottom = "14%"; // move above arrow buttons
+
+        basket.style.bottom = "14%"; // keep above arrows
 
         bgMusic.currentTime = 0;
         bgMusic.play();
@@ -158,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gamePaused) return;
 
         const isBomb = Math.random() < 0.2;
-        const emoji = isBomb ? bombs[0] : fruits[Math.floor(Math.random() * fruits.length)];
+        const emoji = isBomb ? "💣" : fruits[Math.floor(Math.random() * fruits.length)];
 
         const item = document.createElement("div");
         item.classList.add(isBomb ? "bomb" : "fruit");
@@ -169,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gameContainer.appendChild(item);
         fallingItems.push({
             element: item,
-            isBomb: isBomb,
+            isBomb,
             y: 0,
             speed: currentSpeed
         });
@@ -182,7 +180,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!gamePaused) {
 
-            // Move basket using arrow buttons
             if (moveLeft) moveBasket(basketPos - 10);
             if (moveRight) moveBasket(basketPos + 10);
 
@@ -193,7 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const bRect = basket.getBoundingClientRect();
                 const iRect = obj.element.getBoundingClientRect();
 
-                // detect collision
                 if (
                     !(bRect.right < iRect.left ||
                       bRect.left > iRect.right ||
@@ -209,9 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         score++;
                         scoreElement.textContent = score;
 
-                        // Increase speed every 15 points
                         if (score % 15 === 0) {
-                            currentSpeed += 1;
+                            currentSpeed = baseSpeed + (score / 15);
                         }
 
                         obj.element.remove();
@@ -235,7 +230,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function endGame() {
         cancelAnimationFrame(gameInterval);
         clearInterval(fruitInterval);
+
         bgMusic.pause();
+        bgMusic.currentTime = 0;
 
         finalScore.textContent = score;
 
