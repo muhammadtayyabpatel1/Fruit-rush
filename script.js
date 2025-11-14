@@ -1,195 +1,253 @@
-// ----------------------------
-// FRUIT RUSH GAME SCRIPT
-// ----------------------------
+document.addEventListener('DOMContentLoaded', () => {
 
-// Screens
-const startScreen = document.getElementById("start-screen");
-const gameScreen = document.getElementById("game-screen");
-const gameOverScreen = document.getElementById("game-over-screen");
+    // ------------------ ELEMENTS ------------------
+    const startScreen = document.getElementById('start-screen');
+    const startButton = document.getElementById('start-button');
+    const gameScreen = document.getElementById('game-screen');
+    const gameOverScreen = document.getElementById('game-over-screen');
+    const restartButton = document.getElementById('restart-button');
+    const basket = document.getElementById('basket');
+    const gameContainer = document.getElementById('game-container');
+    const scoreElement = document.getElementById('score');
+    const topScoreElement = document.getElementById('top-score');
+    const finalScore = document.getElementById('final-score');
+    const finalTopScore = document.getElementById('final-top-score');
+    const pauseButton = document.getElementById('pause-button');
+    const leftBtn = document.getElementById('left-btn');
+    const rightBtn = document.getElementById('right-btn');
 
-// Buttons
-const startBtn = document.getElementById("start-button");
-const pauseBtn = document.getElementById("pause-button");
-const restartBtn = document.getElementById("restart-button");
-const leftBtn = document.getElementById("left-btn");
-const rightBtn = document.getElementById("right-btn");
+    // ------------------ AUDIO ------------------
+    const bgMusic = new Audio("audio/bg-loop.mp3");
+    bgMusic.loop = true;
 
-// Game Elements
-const basket = document.getElementById("basket");
-const gameContainer = document.getElementById("game-container");
+    const catchSound = new Audio("audio/fruit-catch.mp3");
+    const bombSound = new Audio("audio/bomb-explosion.mp3");
 
-const scoreText = document.getElementById("score");
-const topScoreText = document.getElementById("top-score");
-const finalScore = document.getElementById("final-score");
-const finalTopScore = document.getElementById("final-top-score");
+    // ------------------ VARIABLES ------------------
+    let score = 0;
+    let topScore = localStorage.getItem('topScore') || 0;
+    topScoreElement.textContent = topScore;
 
-// Variables
-let basketX = window.innerWidth / 2;
-let score = 0;
-let topScore = 0;
-let dropSpeed = 3;            // 🔥 NORMAL SPEED
-let speedIncreaseInterval = 15;  
-let speedBoostAmount = 0.7;
-let fruitInterval;
-let gameLoop;
-let isPaused = false;
+    let gameInterval;
+    let fruitInterval;
 
-// Fruit & bomb options
-const fruits = ["🍎", "🍉", "🍌", "🍇", "🍊", "🍒"];
-const bombs = ["💣"];
+    let gamePaused = false;
+    let baseSpeed = 2;         // normal speed
+    let currentSpeed = 2;      // increases every 15 pts
 
-// ----------------------------
-// START GAME
-// ----------------------------
-startBtn.onclick = () => {
-    startScreen.classList.add("hidden");
-    gameScreen.classList.remove("hidden");
-    resetGame();
-};
+    let basketPos = 0;
+    let moveLeft = false;
+    let moveRight = false;
 
-// ----------------------------
-// RESET GAME
-// ----------------------------
-function resetGame() {
-    score = 0;
-    dropSpeed = 3;   // 🔥 Reset to normal speed
-    scoreText.textContent = score;
+    const fruits = ["🍎", "🍌", "🍓", "🍇", "🍊"];
+    const bombs = ["💣"];
+    let fallingItems = [];
 
-    isPaused = false;
+    gameContainer.setAttribute("tabindex", "0");
 
-    clearInterval(fruitInterval);
-    clearInterval(gameLoop);
+    // -----------------------------------------------------
+    //                    START GAME
+    // -----------------------------------------------------
+    startButton.addEventListener("click", () => {
+        startScreen.classList.add("hidden");
+        gameScreen.classList.remove("hidden");
+        startGame();
+    });
 
-    startFruitSpawner();
-    startGameLoop();
-}
+    restartButton.addEventListener("click", () => {
+        gameOverScreen.classList.add('hidden');
+        gameScreen.classList.remove('hidden');
+        startGame();
+    });
 
-// ----------------------------
-// FRUIT / BOMB SPAWNER
-// ----------------------------
-function startFruitSpawner() {
-    fruitInterval = setInterval(() => {
-        if (isPaused) return;
+    // -----------------------------------------------------
+    //                    PAUSE BUTTON
+    // -----------------------------------------------------
+    pauseButton.addEventListener("click", () => {
+        gamePaused = !gamePaused;
+
+        if (gamePaused) {
+            pauseButton.textContent = "▶️ Resume";
+            bgMusic.pause();
+        } else {
+            pauseButton.textContent = "⏸️ Pause";
+            bgMusic.play();
+        }
+    });
+
+    // -----------------------------------------------------
+    //            MOVEMENT BUTTON EVENTS
+    // -----------------------------------------------------
+    function setupBtn(btn, direction) {
+        btn.addEventListener("touchstart", () => {
+            if (direction === "left") moveLeft = true;
+            if (direction === "right") moveRight = true;
+        });
+
+        btn.addEventListener("touchend", () => {
+            moveLeft = false;
+            moveRight = false;
+        });
+    }
+
+    setupBtn(leftBtn, "left");
+    setupBtn(rightBtn, "right");
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === "ArrowLeft") moveLeft = true;
+        if (e.key === "ArrowRight") moveRight = true;
+    });
+
+    document.addEventListener('keyup', () => {
+        moveLeft = false;
+        moveRight = false;
+    });
+
+    // -----------------------------------------------------
+    //               DRAG BASKET (PHONE + PC)
+    // -----------------------------------------------------
+    let dragging = false;
+
+    basket.addEventListener("touchstart", () => dragging = true);
+    basket.addEventListener("touchend", () => dragging = false);
+    basket.addEventListener("touchmove", (e) => {
+        e.preventDefault();
+        if (dragging) moveBasket(e.touches[0].clientX);
+    });
+
+    basket.addEventListener("mousedown", () => dragging = true);
+    basket.addEventListener("mouseup", () => dragging = false);
+    basket.addEventListener("mousemove", (e) => {
+        if (dragging) moveBasket(e.clientX);
+    });
+
+    function moveBasket(x) {
+        basketPos = x - basket.offsetWidth / 2;
+
+        if (basketPos < 0) basketPos = 0;
+        if (basketPos > gameContainer.offsetWidth - basket.offsetWidth)
+            basketPos = gameContainer.offsetWidth - basket.offsetWidth;
+
+        basket.style.left = basketPos + "px";
+    }
+
+    // -----------------------------------------------------
+    //                    START GAME FUNCTION
+    // -----------------------------------------------------
+    function startGame() {
+        // reset values
+        score = 0;
+        currentSpeed = baseSpeed;
+        scoreElement.textContent = score;
+        basket.style.bottom = "14%"; // move above arrow buttons
+
+        bgMusic.currentTime = 0;
+        bgMusic.play();
+
+        fallingItems.forEach(item => item.element.remove());
+        fallingItems = [];
+
+        fruitInterval = setInterval(spawnItem, 1000);
+        gameInterval = requestAnimationFrame(updateGame);
+    }
+
+    // -----------------------------------------------------
+    //                       SPAWN
+    // -----------------------------------------------------
+    function spawnItem() {
+        if (gamePaused) return;
+
+        const isBomb = Math.random() < 0.2;
+        const emoji = isBomb ? bombs[0] : fruits[Math.floor(Math.random() * fruits.length)];
 
         const item = document.createElement("div");
-
-        // 1 out of 8 chance for bomb
-        const isBomb = Math.random() < 0.12;
-        item.textContent = isBomb ? bombs[0] : fruits[Math.floor(Math.random() * fruits.length)];
         item.classList.add(isBomb ? "bomb" : "fruit");
+        item.textContent = emoji;
 
-        item.style.left = Math.random() * (window.innerWidth - 50) + "px";
-        item.style.top = "-40px";
+        item.style.left = Math.random() * (gameContainer.offsetWidth - 40) + "px";
 
         gameContainer.appendChild(item);
-    }, 800);
-}
+        fallingItems.push({
+            element: item,
+            isBomb: isBomb,
+            y: 0,
+            speed: currentSpeed
+        });
+    }
 
-// ----------------------------
-// GAME LOOP (movement + collision)
-// ----------------------------
-function startGameLoop() {
-    gameLoop = setInterval(() => {
-        if (isPaused) return;
+    // -----------------------------------------------------
+    //                      UPDATE GAME
+    // -----------------------------------------------------
+    function updateGame() {
 
-        const items = document.querySelectorAll(".fruit, .bomb");
+        if (!gamePaused) {
 
-        items.forEach(item => {
-            let top = parseFloat(item.style.top);
-            top += dropSpeed;
-            item.style.top = top + "px";
+            // Move basket using arrow buttons
+            if (moveLeft) moveBasket(basketPos - 10);
+            if (moveRight) moveBasket(basketPos + 10);
 
-            const itemRect = item.getBoundingClientRect();
-            const basketRect = basket.getBoundingClientRect();
+            fallingItems.forEach((obj, index) => {
+                obj.y += obj.speed;
+                obj.element.style.top = obj.y + "px";
 
-            // Catch fruit or bomb
-            if (
-                itemRect.bottom >= basketRect.top &&
-                itemRect.left >= basketRect.left &&
-                itemRect.right <= basketRect.right &&
-                itemRect.top < basketRect.bottom
-            ) {
-                if (item.classList.contains("bomb")) {
-                    gameOver();
-                } else {
-                    score++;
-                    scoreText.textContent = score;
+                const bRect = basket.getBoundingClientRect();
+                const iRect = obj.element.getBoundingClientRect();
 
-                    // 🔥 Speed increases every 15 points
-                    if (score % speedIncreaseInterval === 0) {
-                        dropSpeed += speedBoostAmount;
+                // detect collision
+                if (
+                    !(bRect.right < iRect.left ||
+                      bRect.left > iRect.right ||
+                      bRect.bottom < iRect.top ||
+                      bRect.top > iRect.bottom)
+                ) {
+                    if (obj.isBomb) {
+                        bombSound.play();
+                        endGame();
+                        return;
+                    } else {
+                        catchSound.play();
+                        score++;
+                        scoreElement.textContent = score;
+
+                        // Increase speed every 15 points
+                        if (score % 15 === 0) {
+                            currentSpeed += 1;
+                        }
+
+                        obj.element.remove();
+                        fallingItems.splice(index, 1);
                     }
                 }
 
-                item.remove();
-            }
+                if (obj.y > gameContainer.offsetHeight) {
+                    obj.element.remove();
+                    fallingItems.splice(index, 1);
+                }
+            });
+        }
 
-            // Delete items falling off screen
-            if (top > window.innerHeight) {
-                item.remove();
-            }
-        });
-    }, 20);
-}
-
-// ----------------------------
-// PAUSE GAME
-// ----------------------------
-pauseBtn.onclick = () => {
-    isPaused = !isPaused;
-    pauseBtn.textContent = isPaused ? "▶️ Resume" : "⏸️ Pause";
-};
-
-// ----------------------------
-// GAME OVER
-// ----------------------------
-function gameOver() {
-    clearInterval(fruitInterval);
-    clearInterval(gameLoop);
-
-    gameScreen.classList.add("hidden");
-    gameOverScreen.classList.remove("hidden");
-
-    finalScore.textContent = score;
-
-    if (score > topScore) {
-        topScore = score;
+        requestAnimationFrame(updateGame);
     }
 
-    topScoreText.textContent = topScore;
-    finalTopScore.textContent = topScore;
-}
+    // -----------------------------------------------------
+    //                     END GAME
+    // -----------------------------------------------------
+    function endGame() {
+        cancelAnimationFrame(gameInterval);
+        clearInterval(fruitInterval);
+        bgMusic.pause();
 
-// ----------------------------
-// RESTART GAME
-// ----------------------------
-restartBtn.onclick = () => {
-    gameOverScreen.classList.add("hidden");
-    gameScreen.classList.remove("hidden");
-    resetGame();
-};
+        finalScore.textContent = score;
 
-// ----------------------------
-// BASKET MOVEMENT — TOUCH + ARROWS
-// ----------------------------
-document.addEventListener("touchmove", (e) => {
-    const touchX = e.touches[0].clientX;
-    moveBasket(touchX);
+        if (score > topScore) {
+            topScore = score;
+            localStorage.setItem("topScore", topScore);
+        }
+
+        finalTopScore.textContent = topScore;
+
+        gameScreen.classList.add("hidden");
+        gameOverScreen.classList.remove("hidden");
+    }
+
 });
-
-leftBtn.onmousedown = () => moveBasketContinuous(-8);
-rightBtn.onmousedown = () => moveBasketContinuous(8);
-leftBtn.onmouseup = rightBtn.onmouseup = stopBasket;
-
-let moveInterval;
-function moveBasketContinuous(speed) {
-    moveInterval = setInterval(() => moveBasket(basketX + speed), 20);
-}
-function stopBasket() {
-    clearInterval(moveInterval);
-}
-
-function moveBasket(x) {
-    basketX = Math.max(20, Math.min(window.innerWidth - 70, x));
-    basket.style.left = basketX + "px";
-}
